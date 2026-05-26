@@ -133,6 +133,48 @@ function MetricCard({ title, value, subtitle, icon: Icon }) {
   );
 }
 
+function ItemList({ title, rows }) {
+  return (
+    <div
+      style={{
+        background: "#171717",
+        borderRadius: 20,
+        padding: 24,
+        border: "1px solid #333",
+      }}
+    >
+      <h2 style={{ marginTop: 0 }}>{title}</h2>
+
+      {rows.map((row, index) => (
+        <div
+          key={`${row.Name}-${index}`}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            gap: 12,
+            padding: "14px 0",
+            borderTop: "1px solid #2a2a2a",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700 }}>{row.Name}</div>
+            <div style={{ color: "#888", fontSize: 14 }}>
+              {row.Status} · {row.Stage}
+            </div>
+            <div style={{ color: "#666", fontSize: 13 }}>
+              {row.Notes}
+            </div>
+          </div>
+
+          <div style={{ fontWeight: 700 }}>
+            {money(row.Amount)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function App() {
   const [rows, setRows] = useState(demoRows);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -301,6 +343,16 @@ export default function App() {
             icon={AlertTriangle}
           />
         </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+              gap: 20,
+            }}
+          >
+            <ItemList title="Sales Leads" rows={sales} />
+            <ItemList title="Awaiting Payment" rows={invoices} />
+          </div>
       </div>
     </div>
   );
