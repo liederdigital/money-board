@@ -47,6 +47,7 @@ function BoardSection({ title, total, items }) {
           fontSize: 28,
           letterSpacing: 2,
           textTransform: "uppercase",
+          color: "white",
         }}
       >
         {title}
@@ -133,7 +134,7 @@ export default function App() {
             Billing, sales, and total money in motion.
           </div>
 
-          <h1 style={{ fontSize: 42, margin: 0, lineHeight: 1 }}>
+          <h1 style={{ fontSize: 42, margin: 0, lineHeight: 1, color: "white" }}>
             Money Board
           </h1>
 
