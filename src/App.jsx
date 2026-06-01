@@ -20,7 +20,11 @@ function parseCSV(text) {
 function getItems(rows, nameCol, amountCol) {
   return rows
     .slice(1)
-    .filter((row) => row[nameCol] && row[amountCol])
+    .filter((row) =>
+    row[nameCol] &&
+    row[amountCol] &&
+    row[nameCol].toLowerCase() !== "total(s)"
+)
     .map((row) => ({
       name: row[nameCol],
       amount: Number(String(row[amountCol]).replace(/[$,]/g, "")),
@@ -50,7 +54,7 @@ function BoardSection({ title, total, items }) {
 
       <div
         style={{
-          fontSize: 64,
+          fontSize: 48,
           fontWeight: 800,
           margin: "20px 0 28px",
         }}
@@ -126,10 +130,10 @@ export default function App() {
               marginBottom: 10,
             }}
           >
-            Lieder Digital Workspace
+            Billing, sales, and total money in motion.
           </div>
 
-          <h1 style={{ fontSize: 72, margin: 0, lineHeight: 1 }}>
+          <h1 style={{ fontSize: 42, margin: 0, lineHeight: 1 }}>
             Money Board
           </h1>
 
@@ -173,7 +177,7 @@ export default function App() {
             Total
           </div>
 
-          <div style={{ fontSize: 72, fontWeight: 900 }}>
+          <div style={{ fontSize: 56, fontWeight: 900 }}>
             {money(billingTotal + salesTotal)}
           </div>
         </section>
