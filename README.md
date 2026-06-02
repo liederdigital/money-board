@@ -1,16 +1,111 @@
-# React + Vite
+# Money Board
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A deliberately simple digital replacement for the office whiteboards.
 
-Currently, two official plugins are available:
+Live site:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+https://moneyboard.dev
 
-## React Compiler
+## Purpose
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Money Board answers three questions:
 
-## Expanding the ESLint configuration
+1. What money am I waiting to collect?
+2. What sales opportunities are in motion?
+3. What is the total value of both combined?
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+This is intentionally **not** a CRM, accounting system, or business intelligence dashboard.
+
+The goal is to provide a simple, glanceable scoreboard that can be viewed from any device.
+
+---
+
+## Architecture
+
+Google Sheets → Money Board → Vercel → moneyboard.dev
+
+### Data Source
+
+The application reads data from a published Google Sheet.
+
+### Billing
+
+| Client | Amount |
+|----------|----------|
+| Tugg Line | 2500 |
+| Paramount Homes | 1000 |
+
+### Sales
+
+| Client | Amount |
+|----------|----------|
+| Bugs Towing | 8350 |
+
+The application calculates totals automatically.
+
+---
+
+## Normal Usage
+
+To update Money Board:
+
+1. Open the Google Sheet
+2. Edit client names or amounts
+3. Refresh moneyboard.dev
+
+No GitHub actions are required.
+No Vercel actions are required.
+No deployment is required.
+
+---
+
+## Development Workflow
+
+Only use GitHub when changing the application itself.
+
+Typical workflow:
+
+    git add .
+    git commit -m "Describe change"
+    git push
+
+Vercel automatically deploys changes after each push.
+
+---
+
+## Deployment
+
+Hosting: Vercel
+
+Domain: moneyboard.dev
+
+GitHub repository:
+
+git@github.com:liederdigital/money-board.git
+
+Deployment is automatic.
+
+---
+
+## Local Development
+
+Start the development server:
+
+    npm run dev
+
+Open:
+
+http://localhost:5173
+
+---
+
+## Notes
+
+Money Board is intentionally simple.
+
+- Remove complexity.
+- Reduce clicks.
+- Favor readability over features.
+- Treat it like a digital whiteboard.
+
+The goal is clarity, not analytics.
