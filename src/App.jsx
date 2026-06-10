@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTf8BB8WO_JMs3Zu4DWfXnf_hdRUXGfuDaY6tIDccf-oB0AhHhe5GgdQgcCXxKZE8q7uKaYgXcXO4Ke/pub?output=csv";
+const SECTION_TITLES = ["Billing", "Sales"];
 
 function money(value) {
   return Number(value || 0).toLocaleString("en-US", {
@@ -11,23 +12,127 @@ function money(value) {
 }
 
 function parseCSV(text) {
-  return text
-    .trim()
-    .split(/\r?\n/)
-    .map((line) => line.split(",").map((cell) => cell.trim()));
+  const rows = [];
+  let cell = "";
+  let row = [];
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const nextChar = text[index + 1];
+
+    if (char === '"' && inQuotes && nextChar === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      row.push(cell.trim());
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && nextChar === "\n") {
+        index += 1;
+      }
+
+      row.push(cell.trim());
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+
+  if (cell || row.length) {
+    row.push(cell.trim());
+    rows.push(row);
+  }
+
+  return rows.filter((currentRow) => currentRow.some(Boolean));
 }
 
-function getItems(rows, nameCol, amountCol) {
+function normalize(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function parseAmount(value) {
+  const amount = Number(String(value || "").replace(/[$,]/g, ""));
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function getSectionItems(rows, title) {
+  const titleRowIndex = rows.findIndex((row) =>
+    row.some((cell) => normalize(cell) === normalize(title))
+  );
+
+  if (titleRowIndex === -1) {
+    return [];
+  }
+
+  const titleRow = rows[titleRowIndex];
+  const sectionStart = titleRow.findIndex(
+    (cell) => normalize(cell) === normalize(title)
+  );
+  const followingSectionStarts = SECTION_TITLES.filter(
+    (sectionTitle) => normalize(sectionTitle) !== normalize(title)
+  )
+    .map((sectionTitle) =>
+      titleRow.findIndex((cell) => normalize(cell) === normalize(sectionTitle))
+    )
+    .filter((index) => index > sectionStart);
+  const sectionEnd = followingSectionStarts.length
+    ? Math.min(...followingSectionStarts)
+    : Infinity;
+
+  const headerRowIndex = rows.findIndex((row, rowIndex) => {
+    if (rowIndex <= titleRowIndex) {
+      return false;
+    }
+
+    const clientIndex = row.findIndex(
+      (cell, cellIndex) =>
+        cellIndex >= sectionStart &&
+        cellIndex < sectionEnd &&
+        normalize(cell) === "client"
+    );
+    const amountIndex = row.findIndex(
+      (cell, cellIndex) =>
+        cellIndex >= sectionStart &&
+        cellIndex < sectionEnd &&
+        normalize(cell) === "amount"
+    );
+
+    return clientIndex !== -1 && amountIndex !== -1;
+  });
+
+  if (headerRowIndex === -1) {
+    return [];
+  }
+
+  const headerRow = rows[headerRowIndex];
+  const nameCol = headerRow.findIndex(
+    (cell, cellIndex) =>
+      cellIndex >= sectionStart &&
+      cellIndex < sectionEnd &&
+      normalize(cell) === "client"
+  );
+  const amountCol = headerRow.findIndex(
+    (cell, cellIndex) =>
+      cellIndex >= sectionStart &&
+      cellIndex < sectionEnd &&
+      normalize(cell) === "amount"
+  );
+
   return rows
-    .slice(1)
-    .filter((row) =>
-    row[nameCol] &&
-    row[amountCol] &&
-    row[nameCol].toLowerCase() !== "total(s)"
-)
-    .map((row) => ({
+    .slice(headerRowIndex + 1)
+    .filter((row) => {
+      const name = normalize(row[nameCol]);
+      return name && name !== "total(s)" && row[amountCol];
+    })
+    .map((row, index) => ({
+      key: `${title}-${headerRowIndex + index + 1}-${row[nameCol]}-${row[amountCol]}`,
       name: row[nameCol],
-      amount: Number(String(row[amountCol]).replace(/[$,]/g, "")),
+      amount: parseAmount(row[amountCol]),
     }));
 }
 
@@ -66,7 +171,7 @@ function BoardSection({ title, total, items }) {
       <div style={{ display: "grid", gap: 18 }}>
         {items.map((item) => (
           <div
-            key={item.name}
+            key={item.key}
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -90,22 +195,45 @@ export default function App() {
   const [rows, setRows] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  async function loadSheet() {
+  async function fetchSheetRows() {
     const response = await fetch(SHEET_CSV_URL, { cache: "no-store" });
     const text = await response.text();
 
-    setRows(parseCSV(text));
-    setLastUpdated(new Date());
+    return {
+      rows: parseCSV(text),
+      lastUpdated: new Date(),
+    };
   }
 
   useEffect(() => {
+    let isMounted = true;
+
+    function loadSheet() {
+      fetchSheetRows()
+        .then(({ rows: nextRows, lastUpdated: nextLastUpdated }) => {
+          if (!isMounted) {
+            return;
+          }
+
+          setRows(nextRows);
+          setLastUpdated(nextLastUpdated);
+        })
+        .catch((error) => {
+          console.error("Unable to load sheet", error);
+        });
+    }
+
     loadSheet();
     const interval = setInterval(loadSheet, 60000);
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  const billing = useMemo(() => getItems(rows, 0, 1), [rows]);
-  const sales = useMemo(() => getItems(rows, 3, 4), [rows]);
+  const billing = useMemo(() => getSectionItems(rows, "Billing"), [rows]);
+  const sales = useMemo(() => getSectionItems(rows, "Sales"), [rows]);
 
   const billingTotal = billing.reduce((sum, item) => sum + item.amount, 0);
   const salesTotal = sales.reduce((sum, item) => sum + item.amount, 0);
