@@ -28,6 +28,10 @@ Google Sheets → Money Board → Vercel → moneyboard.dev
 
 The application reads data from a published Google Sheet.
 
+Each section should be labeled `Billing` or `Sales`. Within each section, the app looks for `Client` and `Amount` columns and displays only those values.
+
+Additional columns such as `Date`, `Notes`, or internal tracking fields are allowed. They can be used in the sheet without appearing on the public whiteboard.
+
 ### Billing
 
 | Client | Amount |
